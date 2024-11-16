@@ -65,8 +65,17 @@ def refresh_token(token_info):
         scope=SPOTIFY_SCOPE
     )
     refreshed_token_info = sp_oauth.refresh_access_token(token_info.dict['refresh_token'])
+
+    print("Refreshed token info:")
+    print(refreshed_token_info)
+
+    new_token = Token(user_id=refreshed_token_info['user_id'],
+                      access=refreshed_token_info['token_data']['access_token'],
+                      refresh=refreshed_token_info['token_data']['refresh_token'],
+                      expires_at=refreshed_token_info['token_data']['expires_at'])
+
     
-    token_info.dict.update(refreshed_token_info)
+    token_info.dict.update(new_token)
     return token_info
 
 
@@ -126,7 +135,6 @@ def save_most_streamed_song(user_id):
                 'track_name': track['name'],
                 'artist_name': track['artists'][0]['name'],
                 'album_name': track['album']['name'],
-                'popularity': track['popularity']
             }
             songs_table.put_item(Item=song_info)
             print(f"Saved song '{track['name']}' for user {user_id}")
@@ -150,4 +158,5 @@ def lambda_handler(event, context):
 
 # To test locally
 if __name__ == "__main__":
-    print(lambda_handler({}, {})['StatusCode'])
+   
+    print(lambda_handler({}, {})['statusCode'])
