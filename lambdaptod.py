@@ -69,7 +69,7 @@ def refresh_token(token_info):
     print("Refreshed token info:")
     print(refreshed_token_info)
 
-    new_token = Token(user_id=refreshed_token_info['user_id'],
+    new_token = Token(user_id=token_info['user_id'],
                       access=refreshed_token_info['token_data']['access_token'],
                       refresh=refreshed_token_info['token_data']['refresh_token'],
                       expires_at=refreshed_token_info['token_data']['expires_at'])
@@ -114,7 +114,12 @@ def get_spotify_client(user_id):
     return spotipy.Spotify(auth=token_info.dict['access_token'])
 
 
-def save_most_streamed_song(user_id):
+def save_song_to_dynamodb(song_info):
+    dynamodb = boto3.resource('dynamodb',region_name='eu-north-1')
+    table = dynamodb.Table('SpotifyListeningHistory')
+    table.put_item(Item=song_info)
+
+def save_most_streamed_song(user_id,range='short_term'):
     sp = get_spotify_client(user_id)
     if not sp:
         return
@@ -126,9 +131,11 @@ def save_most_streamed_song(user_id):
         now = time.strftime('%Y-%m-%d', time.localtime(now))
         print(now)
 
-        results = sp.current_user_top_tracks(time_range='short_term', limit=1)
+        results = sp.current_user_top_tracks(time_range=range, limit=3)
         if results['items']:
-            track = results['items'][0]
+         tracks = []
+         for item in results['items']:
+            track = item
             song_info = {
                 'user_id': user_id,
                 'played_at': now,
@@ -136,8 +143,13 @@ def save_most_streamed_song(user_id):
                 'artist_name': track['artists'][0]['name'],
                 'album_name': track['album']['name'],
             }
-            songs_table.put_item(Item=song_info)
+            tracks.append(song_info)
+            #save to dynamodb
+            save_song_to_dynamodb(song_info)
+            
+
             print(f"Saved song '{track['name']}' for user {user_id}")
+        return tracks
     except spotipy.exceptions.SpotifyException as e:
         print(f"Error retrieving top track for user {user_id}: {e}")
 
@@ -148,6 +160,44 @@ def save_all_users_top_tracks():
         user_id = item['user_id']
         save_most_streamed_song(user_id)
 
+def get_current_time():
+    return time.strftime("%H:%M:%S", time.localtime())
+
+def get_user_data(chat_id):
+
+    try:
+        dynamodb = boto3.resource('dynamodb', region_name='eu-north-1')
+        table_telegram = dynamodb.Table('telegram-ids')
+        #find chat_id in the table
+        response = table_telegram.get_item(Key={'chat_id': str(chat_id)})
+        ids = response['Item']
+        user_id = ids['spotify_id']
+
+        #decide to call save most streamed song or just get the data
+        today = time.strftime('%d', time.localtime(int(time.time())))
+        
+        if today == '01':
+            return save_most_streamed_song(user_id)
+        else:
+            history_table = dynamodb.Table('SpotifyListeningHistory')
+            response = history_table.scan()
+            tracks = response['Items']
+            return tracks
+           
+    except Exception as e:
+        print(f"Error retrieving user data for user {chat_id}: {e}")
+        return None
+    
+
+    try:
+        tracks = boto3.resource('dynamodb',region_name='eu-north-1').Table('SpotifyListeningHistory')
+        response = tracks.scan()
+        items = response['Items']
+        
+        return items
+    except Exception as e:
+        print(f"Error retrieving user data for user {user_id}: {e}")
+        return None
 
 def lambda_handler(event, context):
     save_all_users_top_tracks()
@@ -158,5 +208,5 @@ def lambda_handler(event, context):
 
 # To test locally
 if __name__ == "__main__":
-   
+   #pass
     print(lambda_handler({}, {})['statusCode'])

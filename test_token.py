@@ -2,16 +2,16 @@ import requests
 import boto3
 import urllib.parse
 import  os
+import boto3
 
-# Replace these with your Spotify Developer App credentials
 CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
 CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
 REDIRECT_URI = 'http://localhost:8888/callback'
 
-# Full scope for maximum permissions
+# Full scope
 SCOPE = "ugc-image-upload user-read-recently-played user-top-read user-read-playback-position user-read-playback-state user-modify-playback-state user-read-currently-playing playlist-modify-public playlist-modify-private playlist-read-private playlist-read-collaborative app-remote-control streaming user-follow-modify user-follow-read user-library-modify user-library-read user-read-email user-read-private"
 
-# Spotify Authorization URL
+
 auth_url = (
     f"https://accounts.spotify.com/authorize?client_id={CLIENT_ID}"
     f"&response_type=code&redirect_uri={urllib.parse.quote(REDIRECT_URI)}"
@@ -19,7 +19,7 @@ auth_url = (
 )
 print(f"Please go to this URL and authorize access:\n{auth_url}")
 
-# After authorization, enter the redirected URL
+
 redirected_url = input("Paste the redirected URL here: ")
 
 # Extract the authorization code from the redirected URL
@@ -47,7 +47,7 @@ if response.status_code == 200:
     token_info = response.json()
     access_token = token_info.get("access_token")
     refresh_token = token_info.get("refresh_token")
-    expires_in = token_info.get("expires_in")  # Token lifetime in seconds
+    expires_in = token_info.get("expires_in")  # in seconds
 
     print(f"Access Token: {access_token}")
     print(f"Refresh Token: {refresh_token}")

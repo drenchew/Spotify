@@ -2,6 +2,8 @@ import requests
 import urllib.parse
 import os
 from flask import Flask, request, redirect
+import boto3
+import time
 
 # Replace these with your Spotify Developer App credentials
 CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
@@ -20,6 +22,32 @@ auth_url = (
 
 # Flask app for handling redirect
 app = Flask(__name__)
+
+def get_spotify_user_id(access_token):
+    user_profile_url = "https://api.spotify.com/v1/me"
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+    response = requests.get(user_profile_url, headers=headers)
+    if response.status_code == 200:
+        user_info = response.json()
+        return user_info.get("id")
+    else:
+        raise Exception(f"Failed to get user profile: {response.status_code} {response.text}")
+
+def store_tokens_in_dynamodb(access_token, refresh_token, expires_in, user_id):
+    try:
+        dynamodb = boto3.resource('dynamodb', region_name='eu-north-1')
+        tokens_table = dynamodb.Table('token-refs')
+        tokens_table.put_item(Item={
+            'user_id': user_id,
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+            'expires_at': int(time.time()) + expires_in
+        })
+    except Exception as e:
+        print(e)
+        return f"Error storing tokens: {e}", 500
 
 @app.route("/")
 def index():
@@ -51,11 +79,19 @@ def callback():
         refresh_token = token_info.get("refresh_token")
         expires_in = token_info.get("expires_in")  # Token lifetime in seconds
 
+        try:
+            user_id = get_spotify_user_id(access_token)
+            store_tokens_in_dynamodb(access_token, refresh_token, expires_in, user_id)
+        except Exception as e:
+            print(e)
+            return f"Error: {e}", 500
+
         return (
             f"<h1>Authorization Successful!</h1>"
             f"<p>Access Token: {access_token}</p>"
             f"<p>Refresh Token: {refresh_token}</p>"
             f"<p>Expires In: {expires_in} seconds</p>"
+            f"<p>You can now close this window."
         )
     else:
         return f"Error retrieving tokens: {response.status_code}<br>{response.text}", 400
