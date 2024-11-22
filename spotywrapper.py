@@ -144,7 +144,7 @@ def save_most_streamed_song(user_id,range='short_term'):
                 'album_name': track['album']['name'],
             }
             tracks.append(song_info)
-            #save to dynamodb
+            
             save_song_to_dynamodb(song_info)
             
 
@@ -189,15 +189,6 @@ def get_user_data(chat_id):
         return None
     
 
-    try:
-        tracks = boto3.resource('dynamodb',region_name='eu-north-1').Table('SpotifyListeningHistory')
-        response = tracks.scan()
-        items = response['Items']
-        
-        return items
-    except Exception as e:
-        print(f"Error retrieving user data for user {user_id}: {e}")
-        return None
 
 def lambda_handler(event, context):
     save_all_users_top_tracks()

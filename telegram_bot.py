@@ -5,7 +5,7 @@ import random
 import time
 import boto3
 
-import lambdaptod as lh
+import spotywrapper as wr
 
 BOT_NAME = "Amador"
 
@@ -15,13 +15,6 @@ BOT_NAME = "Amador"
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    chat_id = update.message.chat_id
-
-   
-
-   # dynamo = boto3.resource('dynamodb', region_name='eu-north-1')
-  #  chat_ids_table = dynamo.Table('telegram-ids')
-  #  chat_ids_table.put_item(Item={'chat_id': chat_id})
 
     dynamic_greetings = [
         "Hey there!",
@@ -35,9 +28,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     greeting = random.choice(dynamic_greetings)
     # music icon emoji
-    emoji = "\U0001F3B5"
+    check_emoji = "\U0001F3B5"
     init_msg = f"{greeting}! I'm {BOT_NAME}, your Spotify amigo.\n"
-    init_msg+= f"Tell me Your Spotify ID to enter the world of music.\U0001F3B5,\n eg. /id init YourSpotifyId" 
+    init_msg+= f"Tell me Your Spotify ID to enter the world of music.{check_emoji},\n eg. /id init YourSpotifyId" 
     await update.message.reply_text(init_msg)
 
 
@@ -87,8 +80,8 @@ async def id_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
         spotify_id = update.message.text.split(" ")[2]
 
-        chat_ids_table = boto3.resource('dynamodb', region_name='eu-north-1')
-        chat_ids_table = chat_ids_table.Table('telegram-ids')
+        dybamodb = boto3.resource('dynamodb', region_name='eu-north-1')
+        chat_ids_table = dybamodb.Table('telegram-ids')
         chat_ids_table.put_item(Item={'chat_id': str(chat_id), 'spotify_id': str(spotify_id)})
 
         check_mark = "\U00002705"
@@ -99,9 +92,7 @@ async def id_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 def get_spotify_data(chat_id):
-   # lh.lambda_handler(None, None)
-   
-    tracks = lh.get_user_data(chat_id)
+    tracks = wr.get_user_data(chat_id)
 
     return tracks
 
