@@ -6,12 +6,15 @@ import time
 import boto3
 
 import spotywrapper as wr
+import google.generativeai as genai
+
 
 BOT_NAME = "Amador"
 
+genai.configure(api_key=os.getenv('GEMINI_TOKEN'))
 
-# Get current time
 
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -58,8 +61,8 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await context.bot.send_message(chat_id=chat_id, text=msg)
             return
     
-    
-    await context.bot.send_message(chat_id=chat_id, text='hola que tal')
+    response = model.generate_content(raw_input)
+    await context.bot.send_message(chat_id=chat_id, text=response.text)
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
