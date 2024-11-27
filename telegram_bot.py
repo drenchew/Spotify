@@ -12,8 +12,6 @@ import google.generativeai as genai
 BOT_NAME = "Amador"
 
 genai.configure(api_key=os.getenv('GEMINI_TOKEN'))
-
-
 model = genai.GenerativeModel("gemini-1.5-flash")
 
 
@@ -120,25 +118,20 @@ async def send_message_to_all(context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 if __name__ == "__main__":
-    # Replace 'YOUR_BOT_TOKEN' with your actual token
+
     bot_token = os.environ.get("TELEGRAM_ACCESS")
    
     
-    # Create the application
+
     app = ApplicationBuilder().token(bot_token).build()
-    
-    # Add handlers
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
-
     app.add_handler(CommandHandler("id", id_command))
-
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
     
-    # Schedule a job to send messages periodically
 
     #job_queue = app.job_queue
     #job_queue.run_repeating(send_message_to_all, interval=60, first=10)  # Send message every 60 seconds
 
-    # Start the bot
     app.run_polling()

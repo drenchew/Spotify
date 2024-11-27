@@ -22,7 +22,7 @@ print(f"Please go to this URL and authorize access:\n{auth_url}")
 
 redirected_url = input("Paste the redirected URL here: ")
 
-# Extract the authorization code from the redirected URL
+
 parsed_url = urllib.parse.urlparse(redirected_url)
 code = urllib.parse.parse_qs(parsed_url.query).get("code", [None])[0]
 
